@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lp-helloworld-app
+  labels:
+    app: lp-helloworld-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lp-helloworld-app
+  template:
+    metadata:
+      labels:
+        app: lp-helloworld-app
+    spec:
+      containers:
+        - name: lp-helloworld-app
+          image: lp-helloworld-app:latest
+          ports:
+            - containerPort: 8080
+              name: http
