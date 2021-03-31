@@ -6,4 +6,4 @@ namespace: default
 images:
   - name: lp-helloworld-app
     newName: docker.io/stephenwilliams/lp-helloworld-app
-    newTag: 544a51068a3eaca714d1bbb05d86550f382a127e
+    newTag: g544a51068a3eaca714d1bbb05d86550f382a127e
