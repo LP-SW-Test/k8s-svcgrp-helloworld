@@ -1,0 +1,74 @@
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: lp-example1-app
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: lp-example1-app
+  progressDeadlineSeconds: 60
+  # HPA reference (optional)
+  autoscalerRef:
+    apiVersion: autoscaling/v2beta1
+    kind: HorizontalPodAutoscaler
+    name: lp-example1-app
+  service:
+    # container port
+    port: 9898
+    trafficPolicy:
+      tls:
+        # use ISTIO_MUTUAL when mTLS is enabled
+        mode: DISABLE
+
+    gateways:
+      - swilliams-dev-ingress.istio-system.svc.cluster.local
+    # Istio virtual service host names (optional)
+    hosts:
+      - "lp-example1-app.swilliams.dev"
+  # promote the canary without analysing it (default false)
+  skipAnalysis: false
+  analysis:
+    # schedule interval (default 60s)
+    interval: 15s
+    # max number of failed metric checks before rollback
+    threshold: 5
+    # max traffic percentage routed to canary
+    # percentage (0-100)
+    maxWeight: 50
+    # canary increment step
+    # percentage (0-100)
+    stepWeight: 5
+    # Istio Prometheus checks
+    metrics:
+      - name: error-rate
+        templateRef:
+          name: error-rate
+          namespace: istio-system
+        thresholdRange:
+          max: 1
+        interval: 30s
+      - name: latency
+        templateRef:
+          name: latency
+          namespace: istio-system
+        thresholdRange:
+          max: 500
+        interval: 30s
+    # tests
+    webhooks:
+      - name: conformance-test
+        type: pre-rollout
+        timeout: 15s
+        url: http://flagger-loadtester.flagger/
+        metadata:
+          type: bash
+          cmd: "curl -sd 'test' http://lp-example1-app-canary.default:9898/token | grep token"
+      - name: load-test
+        type: rollout
+        timeout: 15s
+        url: http://flagger-loadtester.flagger/
+        metadata:
+          type: cmd
+          cmd: "hey -z 1m -q 10 -c 2 http://lp-example1-app-canary.default:9898/"
+          logCmdOutput: "true"
